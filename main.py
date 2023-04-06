@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import httpx
 import uvicorn
 import asyncio
+import Load_Balancer
 
 app = FastAPI()
 
@@ -11,21 +12,11 @@ backend_servers = [
     "http://localhost:8003"
 ]
 
-class RoundRobinBalancer:
-    def __init__(self, servers):
-        self.servers = servers
-        self.current = 0
-
-    def next_server(self):
-        server = self.servers[self.current]
-        self.current = (self.current + 1) % len(self.servers)
-        return server
-
-balancer = RoundRobinBalancer(backend_servers)
+balancer = Load_Balancer.LoadBalancer(backend_servers, 2, 1)
 
 @app.get("/")
 async def root():
-    backend_server = balancer.next_server()
+    backend_server = balancer.get_server()
     async with httpx.AsyncClient() as client:
         response = await client.get(backend_server)
     return response.text
